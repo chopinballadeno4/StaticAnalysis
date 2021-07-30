@@ -81,11 +81,57 @@ let step p (1, m) = (*step : prog -> state -> state*)
 
 (*=======================================================================================*)
 
+type val_abs = 
+    | Abot   (*ㅗ*)
+    | Atop   (*ㅜ*)
+    | Apos   (*>=0*)
+    | Aneg   (*<=0*)
+type nr_abs = val_abs array (*non-relational abstract domain*)
 
-type val_abs =
-    | Abot
-    | Atop
-    | Apos
-    | Aneg
-type nr_abs = val_abs array
+
+let val_bot = Abot  (*val_bot : val_abs*)
+let val_top = Atop  (*val_top : val_abs*)
+let val_incl a0 a1 = a0 = Abot || a1 = Atop || a0 = a1  (*val_incl a0 a1 = a0 = Abot || a1 = Atop || a0 = a1 // decides whether the abstract ordering relation holds for a pair of abstract elements*)
+let val_cst n = if n < 0 then Aneg else Apos  (*val_cst n = if n < 0 then Aneg else Apos // implements the ? operation, which maps a constant to an abstract element that over-approximates it*)
+let val_sat o n v =  (*val_sat: rel -> int -> val_abs -> val_abs // which over-approximates the effect of condition tests*)
+    if v = Abot then Abot
+    else if o = Cinfeq && n < 0 then
+        if v = Apos then Abot else Aneg
+    else if o = Csup && n >= 0 then
+        if v = Aneg then Abot else Apos
+    else v1
+
+let val_join a0 a1 =  (*val_join: val_abs -> val_abs -> val_abs // over-approximates concrete unions*)
+    match a0, a1 with
+    | Abot , a | a, Abot -> a
+    | Atop , _ | _, Atop | Apos, Aneg | Aneg, Apos -> Atop
+    | Apos , Apos -> Apos
+    | Aneg m Aneg -> Aneg
+
+let val_binop o v0 v1 =  (*val_binop: bop -> val_abs -> val_abs -> val_abs // which implements the computation of ? for each operator ? of the language*)
+    match o, v0, v1 with
+    | _, Abot, _ | _, _, Abot -> Abot
+    | Badd, Apos, Apos -> Apos
+    | Badd, Aneg, Aneg -> Aneg
+    |Badd, _, _ -> Apos
+
+let nr_bot aenv = Array.map (fun _ -> Abot) aenv  (*nr_bot: nr_abs -> nr_abs // inputs an abstract element and returns an element describing the empty set of stores*)
+
+let nr_is_bot aenv = (*nr_is_bot: nr_abs -> bool // checks whether an abstract element describes exactly the empty set of memory states*)
+Array.exists (fun a -> a = val_bot) aenv
+
+let nr_is_le aenv0 aenv1 = (*nr_is_le: nr_abs -> nr_abs -> bool // decides abstract ordering by checking that inclusion holds for each variable*) 
+    let r = ref true in
+    Array.iteri
+        (fun x a0 -> r := !r && val_incl a0 (read x aenv1))
+        aenv0;
+    !r
+
+let nr_join aenv0 aenv1 = (*nr_join: nr_abs -> nr_abs -> nr_abs // computes and over-approximation for the union of sets of stores and also proceeds component per componet*)
+    Array.mapi
+        (fun x a0 -> val_join a0 (read x aenv1))
+        aenv0
+
+
+
 
