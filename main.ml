@@ -133,5 +133,41 @@ let nr_join aenv0 aenv1 = (*nr_join: nr_abs -> nr_abs -> nr_abs // computes and 
         aenv0
 
 
+(*=======================================================================================*)
 
 
+type val_cst = Abot | Acst of int | Atop
+let val_bot = Abot
+let val_top = Atop
+let val_incl a0 a1 = Abot || a1 = Atop || a0 = a1
+let val_cst n = Acst n
+let val_sat o n v =
+    match o, v with
+    | _, Abot -> Abot
+    | Cinfeq, Acst i -> if i > n then Abot else v
+    | Csup, Acst i -> if i <= n then Abot else v
+    | _, _ -> v
+
+let val_join a0 a1 =
+    match a0, a1 with
+    | Abot, a | a, Abot -> a
+    | Atop, _ | _, Atop -> Atop
+    | Acst _ , Acst _ -> if a0 = a1 then a0 else Atop
+
+let val_binop o v0 v1 =
+    match o, v0, v1 with
+    | _, Abot, _ | _, _, Abot -> Abot
+    | Badd, Atop, _ | Badd, _, Atop -> Atop
+    | Badd, Acst i0, Acst i1 -> Acst (i0+i1)
+    | ...
+
+let rec ai_expr e aenv = (*Code of the abstract interpreter for scalar expressions*)
+    match e with
+    | Ecst n -> val_cst n
+    | Evar x -> read x aenv
+    | Ebop (o, e0, e1) -> val_binop o (ai_expr e0 aenv) (ai_expr e1 aenv)
+
+let ai_cond (r, x, n) aenv = (*ai_cond: cond -> nr_abs -> nr_abs*)
+    let av = val_sat r n (read x aenv) in
+    if av = val_bot then nr_bot aenv
+    else write x av aenv
