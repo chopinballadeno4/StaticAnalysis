@@ -139,7 +139,7 @@ let nr_join aenv0 aenv1 = (*nr_join: nr_abs -> nr_abs -> nr_abs // computes and 
 type val_cst = Abot | Acst of int | Atop
 let val_bot = Abot
 let val_top = Atop
-let val_incl a0 a1 = Abot || a1 = Atop || a0 = a1
+let val_incl a0 a1 = a0 = Abot || a1 = Atop || a0 = a1
 let val_cst n = Acst n
 let val_sat o n v =
     match o, v with
@@ -171,3 +171,40 @@ let ai_cond (r, x, n) aenv = (*ai_cond: cond -> nr_abs -> nr_abs*)
     let av = val_sat r n (read x aenv) in
     if av = val_bot then nr_bot aenv
     else write x av aenv
+
+
+
+(*=======================================================================================*)
+
+(*
+let rec postlfp f a = (*postlfp : (nr_abs -> nr_abs) -> nr_abs -> nr_abs*)
+    let anext = f a in
+    if nr_is_le anext a then a
+    else postlfp f (nr_join a anext)
+    (*ai_com : com -> nr_abs -> nr_abs*)
+*)
+
+let postlfp f a = (*improved the anaysis !!*)
+    let rec aux acc n a =
+        let anext = f a in
+        if n < 2 then
+            aux (nr_join a anext) (n+1) anext
+        else if nr_is_le anext a then nr_join acc a
+        else aux acc (n+1) (nr_join a anext) in
+    aux a 0 a
+
+let rec ai_com (1, c) aenv =
+    if nr_is_bot aenv then aenv
+    else
+        match c with
+        | Cskip -> aenv
+        | Cseq (c0, c1) -> ai_com c1 (ai_com c0 aenv)
+        | Cassign (x, e) -> write x (ai_expr e aenv) aenv
+        | Cinput x -> write x val_top aenv
+        | Cif (b, c0, c1) ->
+            nr_join
+                (ai_com c0 (ai_cond b aenv))
+                (ai_com c1 (ai_cond (cneg b) aenv))
+        | Cwhile (b, c) ->
+            let f_loop = fun a -> ai_com c (ai_cond b a) in
+            ai_cond (cneg b) (postlfp f_loop aenv)
