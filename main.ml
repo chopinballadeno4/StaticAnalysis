@@ -208,3 +208,49 @@ let rec ai_com (1, c) aenv =
         | Cwhile (b, c) ->
             let f_loop = fun a -> ai_com c (ai_cond b a) in
             ai_cond (cneg b) (postlfp f_loop aenv)
+
+
+(*=======================================================================================*)
+
+(* ai_step : com -> label -> nr_abs
+*            -> (label * nr_abs) list *)
+
+let rec ai_step (1, c) lnext aenv = 
+    match c with
+    | Cskip ->
+        [(lnext, aenv)]
+    | Cseq (c0, c1) ->
+        ai_step c0 (fst c1) aenv
+    | Cassign (x, e) ->
+        [(lnext, write x (ai_expr e aenv) aenv)]
+    | Cinput x ->
+        [(lnext, write x val_tip aenv)]
+    | Cif (b, c0, c1) ->
+        [(fst c0, ai_cond b aenv);
+         (fst c1, ai_cond (cneg b) aenv)]
+    | Cwhile (b, c) ->
+        [(fst c, ai_cond b aenv);
+         (lnext, ai_cond (cneg b) aenv)]
+
+
+(*ai_iter: prog -> nr_abs ->unit*)
+let ai_iter p aenv =
+    let (1, c) = first p in
+    invs := I.add l aenv I.empty;
+    let wlist = T.create () in
+    T.add l wlist;
+    while not (T.is_empty wlist) do
+        let l = T.pop wlist in
+        let c = find p l in
+        let lnext = next p l in
+        let aenv = I.find l !invs in
+        let aposts = ai_step (1,c) lnext aenv in
+        List.iter
+        (fun (lnext, apost)->
+            let old_apost = storage_find lnext in
+            if not (nr_is_le apost old_apost) then
+            let new_apost = nr_join old_apost apost in
+            invs := I.add lnext new_apost !invs;
+            T.add lnext wlist
+        ) aposts
+done
