@@ -1,58 +1,63 @@
-type label = int (* what is label *)
-type const = int (*Constants , machine integer *)
-type var = int
+type label = int 
+type const = int 
+type var = int 
 
-type bop = Badd | Bsub | Bmul
-type rel = Cinfeq | Csup (*big or small*)
+type bop = Badd | Bsub | Bmul 
+type rel = Cinfeq | Csup 
 
-type expr =
-| Ecst of const (*n // Constant Expression*)
-| Evar of var (*x // variable Expression*)
-| Ebop of bop * expr * expr (* E . E //binary operator to a pair of expressions*)
+type expr = 
+| Ecst of const 
+| Evar of var 
+| Ebop of bop * expr * expr 
 
-type cond = (*Boolean Expression*)
+type cond = 
 rel * var * const
 
 type command =
-| Cskip (*skip*)
-| Cseq of com * com (*C; C*)
-| Cassign of var * expr (* x:=E *)
-| Cinput of var (* input(x) *) 
-| Cif of cond * com * com (* if(B) {C} else {C} *)
-| Cwhile of cond * com (* while(B) {} *)
+| Cskip 
+| Cseq of com * com 
+| Cassign of var * expr 
+| Cinput of var  
+| Cif of cond * com * com 
+| Cwhile of cond * com 
 and com = 
 label * command
 
-type mem = const array (*read: var -> mem -> const*) 
+type mem = const array  
+
+(*메모리 m 에서 변수 x값 읽어오기 !!!!! return -> n *)
 let read x m = m.(x) 
-let write Array x n m = (*wrtie: var -> const -> mem -> mem*)
+
+(*메모리 m 에 변수 x의 값을 n으로 주고 !!!!! return -> Memory*)
+let write x n m = 
     let nm = Array.copy m in
     nm.(x) <- n;
     nm
 
-type state = label * mem (*label is int*)
+type state = label * mem 
 
-let rec sem_expr e m = (*sem_expr : expr -> mem -> const*)
+(*expr 값을 구분하여 n 값 일 경우 n을 , x 값 일 경우 메모리에서 찾고 , 연산일 경우 각각 expression을 연산한다 !!!!! return -> const(n)*)
+let rec sem_expr e m = 
     match e with
-    | Ecst n -> n
-    | Evar x -> read x m (*read is  ' let read x m = m.(x) '*)
-    | Ebop (o, e0, e1) ->
+    | Ecst n -> n 
+    | Evar x -> read x m 
+    | Ebop (o, e0, e1) -> 
         binop o
         (sem_expr e0 m)
         (sem_expr e1 m)
 
-let relop c v0 v1 = (*semantics of test ... relop : rel -> const -> const -> bool*) 
-    match c with (*c is rel ... ' type rel = Cinfeq | Csup (*big or small*) ' *)
+(*각각 크기를 비교 !!!!! return -> bool*)
+let relop c v0 v1 =  
+    match c with 
     | Cinfeq -> v0 <= v1
     | Csup -> v0 > v1
-    (* sem_cond:
-     *  (rel * var * const)
-     *  -> mem -> bool *)
-
+    
+(*메모리 m 에서 x 값을 찾고 relop 함수 호출 !!!!! return -> relop(함수)*)
 let sem_cond (c, x, n) m =
-    relop c (read x m) 
+    relop c (read x m) n
 
-let rec sem_com (1, c) m = (*val sem_com : ccom -> mem -> mem*)
+(*command 각종 명령 처리 !!!!! return -> memory*)
+let rec sem_com (l, c) m = 
     match c with
     | Cskip -> m
     | Cseq (c0, c1) -> sem_com c1 (sem_com c0 m)
@@ -63,20 +68,21 @@ let rec sem_com (1, c) m = (*val sem_com : ccom -> mem -> mem*)
         else sem_com c1 m
     | Cwhile (b, c) ->
         if sem_cond b m then
-            sem_com (1, Cwhile (b, c)) (sem_com c m)
+            sem_com (l, Cwhile (b, c)) (sem_com c m)
         else m
 
-let step p (1, m) = (*step : prog -> state -> state*)
-    match find p 1 with
-    | Cskip -> (next p 1, m)
-    | Cassgin (x, e) -> (next p 1, write x (sem_expr e m) m)
-    | Cinput x -> (next p 1, write x (input()) m)
+(*프로그램과 label...? 을 통해 command를 구분하고 각 command 에 맞는 수행 !!!!! return -> (label, memory) *)
+let step p (l, m) = (* next : prog -> label -> label        find : prog -> label -> com *) 
+    match find p l with
+    | Cskip -> (next p l, m)
+    | Cassgin (x, e) -> (next p l, write x (sem_expr e m) m)
+    | Cinput x -> (next p l, write x (input()) m)
     | C if (b, c0, c1) ->
         if sem_cond b m then (fst c0, m)
         else                 (fst c1, m)
     | Cwhile (b, c) ->
         if sem_cond b m then (fst c, m)
-        else                 (next p 1, m)
+        else                 (next p l, m)
 
 
 (*=======================================================================================*)
