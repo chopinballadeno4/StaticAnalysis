@@ -97,9 +97,10 @@ type nr_abs = val_abs array (*non-relational abstract domain*)
 
 let val_bot = Abot  (*val_bot : val_abs*)
 let val_top = Atop  (*val_top : val_abs*)
-let val_incl a0 a1 = a0 = Abot || a1 = Atop || a0 = a1  (*val_incl a0 a1 = a0 = Abot || a1 = Atop || a0 = a1 // decides whether the abstract ordering relation holds for a pair of abstract elements*)
-let val_cst n = if n < 0 then Aneg else Apos  (*val_cst n = if n < 0 then Aneg else Apos // implements the ? operation, which maps a constant to an abstract element that over-approximates it*)
-let val_sat o n v =  (*val_sat: rel -> int -> val_abs -> val_abs // which over-approximates the effect of condition tests*)
+let val_incl a0 a1 
+    = a0 = Abot || a1 = Atop || a0 = a1  (*추상 요소 쌍에 대해 추상 순서 관계가 유지되는지 여부를 결정하는 val_incl 함수 !!!!! return -> Bool *)
+let val_cst n = if n < 0 then Aneg else Apos  (* 상수를 과도하게 근사하는 추상 요소에 매핑하는 연산 !!!!! return -> type val_abs(>=0,<=0)*)
+let val_sat o n v =  (*상태 테스트의 효과를 과도하게 추정 !!!!! return -> type val_abs(ALL)*)
     if v = Abot then Abot
     else if o = Cinfeq && n < 0 then
         if v = Apos then Abot else Aneg
@@ -107,14 +108,14 @@ let val_sat o n v =  (*val_sat: rel -> int -> val_abs -> val_abs // which over-a
         if v = Aneg then Abot else Apos
     else v1
 
-let val_join a0 a1 =  (*val_join: val_abs -> val_abs -> val_abs // over-approximates concrete unions*)
+let val_join a0 a1 =  (*구체적 결합을 과도하게 추정 !!!!! return -> type val_abs(ALL)*)
     match a0, a1 with
     | Abot , a | a, Abot -> a
     | Atop , _ | _, Atop | Apos, Aneg | Aneg, Apos -> Atop
     | Apos , Apos -> Apos
-    | Aneg m Aneg -> Aneg
+    | Aneg , Aneg -> Aneg
 
-let val_binop o v0 v1 =  (*val_binop: bop -> val_abs -> val_abs -> val_abs // which implements the computation of ? for each operator ? of the language*)
+let val_binop o v0 v1 =  (*각각 연산의 계산 구현 !!!!! return -> type val_abs(ALL)*)
     match o, v0, v1 with
     | _, Abot, _ | _, _, Abot -> Abot
     | Badd, Apos, Apos -> Apos
