@@ -122,20 +122,20 @@ let val_binop o v0 v1 =  (*각각 연산의 계산 구현 !!!!! return -> type v
     | Badd, Aneg, Aneg -> Aneg
     |Badd, _, _ -> Apos
 
-let nr_bot aenv = Array.map (fun _ -> Abot) aenv  (*nr_bot: nr_abs -> nr_abs // inputs an abstract element and returns an element describing the empty set of stores*)
+let nr_bot aenv = Array.map (fun _ -> Abot) aenv  (*추상 요소를 입력하고 빈 저장소 집합을 설명하는 요소를 반환합니다 !!!!! return -> nr_bot*)
 
-let nr_is_bot aenv = (*nr_is_bot: nr_abs -> bool // checks whether an abstract element describes exactly the empty set of memory states*)
+let nr_is_bot aenv = (*추상 요소가 메모리 상태의 빈 집합을 정확히 설명하는지 확인합니다 !!!!! return -> bool *)
 Array.exists (fun a -> a = val_bot) aenv
 
-let nr_is_le aenv0 aenv1 = (*nr_is_le: nr_abs -> nr_abs -> bool // decides abstract ordering by checking that inclusion holds for each variable*) 
-    let r = ref true in
-    Array.iteri
+let nr_is_le aenv0 aenv1 = (*포함이 각 변수에 대해 유지되는지 확인하여 추상적인 순서를 결정합니다 !!!!! return -> bool*) 
+    let r = ref true in (*이거 무슨 의미인지 잘은 모르겠음 ... !!*)
+    Array.iteri (*Array.iter와 같지만 요소의 인덱스에 첫 번째 인수로 함수가 적용되고 요소 자체가 두 번째 인수로 적용됩니다.*)
         (fun x a0 -> r := !r && val_incl a0 (read x aenv1))
         aenv0;
     !r
 
-let nr_join aenv0 aenv1 = (*nr_join: nr_abs -> nr_abs -> nr_abs // computes and over-approximation for the union of sets of stores and also proceeds component per componet*)
-    Array.mapi
+let nr_join aenv0 aenv1 = (*aenv0 !!!!! return -> nr_abs *)
+    Array.mapi (*map 과 동일하다고 보아도 ..*)
         (fun x a0 -> val_join a0 (read x aenv1))
         aenv0
 
