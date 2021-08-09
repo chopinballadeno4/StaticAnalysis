@@ -142,8 +142,8 @@ let nr_join aenv0 aenv1 = (*aenv0 !!!!! return -> nr_abs *)
 
 (*=======================================================================================*)
 
-
 type val_cst = Abot | Acst of int | Atop
+(*
 let val_bot = Abot
 let val_top = Atop
 let val_incl a0 a1 = a0 = Abot || a1 = Atop || a0 = a1
@@ -167,18 +167,18 @@ let val_binop o v0 v1 =
     | Badd, Atop, _ | Badd, _, Atop -> Atop
     | Badd, Acst i0, Acst i1 -> Acst (i0+i1)
     | ...
+*)
 
-let rec ai_expr e aenv = (*Code of the abstract interpreter for scalar expressions*)
+let rec ai_expr e aenv = (*스칼라 값 !!!!! return -> val_abs*)
     match e with
     | Ecst n -> val_cst n
     | Evar x -> read x aenv
     | Ebop (o, e0, e1) -> val_binop o (ai_expr e0 aenv) (ai_expr e1 aenv)
 
-let ai_cond (r, x, n) aenv = (*ai_cond: cond -> nr_abs -> nr_abs*)
+let ai_cond (r, x, n) aenv = (*cond 상태 체크 후 그 상태에 맞게 원래 있던 aenv와 연산 수행 !!!!! return -> nr_abs*)
     let av = val_sat r n (read x aenv) in
     if av = val_bot then nr_bot aenv
     else write x av aenv
-
 
 
 (*=======================================================================================*)
