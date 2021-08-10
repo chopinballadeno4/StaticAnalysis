@@ -184,14 +184,14 @@ let ai_cond (r, x, n) aenv = (*cond 상태 체크 후 그 상태에 맞게 원�
 (*=======================================================================================*)
 
 (*
-let rec postlfp f a = (*postlfp : (nr_abs -> nr_abs) -> nr_abs -> nr_abs*)
+let rec postlfp f a = (*(nr_abs -> nr_abs) 와 nr_abs 을 통해  nr_abs*)
     let anext = f a in
     if nr_is_le anext a then a
     else postlfp f (nr_join a anext)
     (*ai_com : com -> nr_abs -> nr_abs*)
 *)
 
-let postlfp f a = (*improved the anaysis !!*)
+let postlfp f a = (*개선된 방법 !!!!! return -> nr_abs*)
     let rec aux acc n a =
         let anext = f a in
         if n < 2 then
@@ -200,7 +200,7 @@ let postlfp f a = (*improved the anaysis !!*)
         else aux acc (n+1) (nr_join a anext) in
     aux a 0 a
 
-let rec ai_com (1, c) aenv =
+let rec ai_com (1, c) aenv = (* command 처리 *)
     if nr_is_bot aenv then aenv
     else
         match c with
