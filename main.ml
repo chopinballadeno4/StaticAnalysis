@@ -222,7 +222,7 @@ let rec ai_com (1, c) aenv = (* command 처리 *)
 (* ai_step : com -> label -> nr_abs
 *            -> (label * nr_abs) list *)
 
-let rec ai_step (1, c) lnext aenv = 
+let rec ai_step (1, c) lnext aenv = (*l 는 labal , c 는 command 쌍 : lnext 는 c를 통한 다음 포인트 : aenv 는 프로그램 포인트 l에 대한 현재 추상 메모리 !!!!! return -> (label * nr_abs) list*)
     match c with
     | Cskip ->
         [(lnext, aenv)]
@@ -240,7 +240,7 @@ let rec ai_step (1, c) lnext aenv =
          (lnext, ai_cond (cneg b) aenv)]
 
 
-(*ai_iter: prog -> nr_abs ->unit*)
+(*!!!!! return -> unit*)
 let ai_iter p aenv =
     let (1, c) = first p in
     invs := I.add l aenv I.empty;
